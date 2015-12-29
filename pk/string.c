@@ -85,3 +85,46 @@ long atol(const char* str)
 
   return sign ? -res : res;
 }
+
+long strtoul(const char* str, char **endptr, int base)
+{
+  long res = 0;
+  int sign = 0;
+
+  while (*str == ' ')
+    str++;
+
+  if (*str == '-' || *str == '+') {
+    sign = *str == '-';
+    str++;
+  }
+
+  if (*str == '0') {
+    str++;
+    if (*str == 'x') {
+      base = 16;
+      str++;
+    } else if (*str == '0') {
+      base = 8;
+      str++;
+    }
+  }
+
+  while (*str) {
+    char c = *str++;
+    res *= base;
+    if ('0' <= c && c <= '9')
+      res += c - '0';
+    else if (base > 10 && 'A' <= c && c <= 'Z')
+      res += c - 'A' + 10;
+    else if (base > 10 && 'a' <= c && c <= 'z')
+      res += c - 'a' + 10;
+    else
+      break;
+  }
+
+  if (endptr)
+    *endptr = (char *)str;
+
+  return sign ? -res : res;
+}
