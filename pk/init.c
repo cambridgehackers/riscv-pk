@@ -44,6 +44,10 @@ static void handle_option(const char* s)
       uarch_counters_enabled = 1;
       break;
 
+  case 'p':
+  case 'm':
+      // skip legacy option
+      break;
     default:
       panic("unrecognized option: `%c'", s[1]);
       break;
@@ -56,6 +60,11 @@ struct mainvars* parse_args(struct mainvars* args)
   kassert(r == 0);
 
   // argv[0] is the proxy kernel itself.  skip it and any flags.
+  {
+    unsigned a0;
+    for (a0 = 1; a0 < args->argc; a0++)
+      printk("  argv[%d] = %s\n", a0, args->argv[a0]);
+  }
   unsigned a0 = 1;
   for ( ; a0 < args->argc && *(char*)(uintptr_t)args->argv[a0] == '-'; a0++)
     handle_option((const char*)(uintptr_t)args->argv[a0]);
