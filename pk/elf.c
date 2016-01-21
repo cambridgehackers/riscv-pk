@@ -8,16 +8,42 @@
 #include <elf.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdio.h>
+
+file_t *file = 0;
 
 ssize_t mem_pread(void *addr, void *buf, size_t n, off_t off)
 {
+  printk("%s:%d\n", __FILE__, __LINE__);
   int nread = n;
+  int chunksize = 1024;
+  int chunk[1024];
+
+  printk("%s:%d\n", __FILE__, __LINE__);
+
+  printk("file_pread addr=%x n=%d off=%x buf=%x\n", addr, n, off, buf);
+  file_pread(file, buf, n, off);
   printk("mem_pread addr=%x n=%d off=%x buf=%x\n", addr, n, off, buf);
-  while (n > 10240) {
-    memcpy(buf, ((char *)addr) + off, 10240);
-    n -= 10240;
-    off += 10240;
-    printk("mem_pread 10240 read off=%x n=%d\n", off, n);
+  while (n > chunksize) {
+    if (memcmp(buf, ((char *)addr) + off, chunksize) != 0) {
+      int i;
+      int o1 = 0;
+      int o2 = 0;
+      printk("mismatch at off %x\n", off);
+      if (0) {
+      /* 	char expected[4096]; */
+      /* char actual[4096]; */
+      /* for (i = 0; i < chunksize; i++) { */
+      /* 	o1 += snprintf(expected+o1, 4096-o1, " %02x", *(char *)(buf + i)); */
+      /* 	o2 += snprintf(actual+o2, 4096-o2, " %02x", *(char *)(addr + off + i)); */
+      /* } */
+      /* printk("mismatch at off %x\n    expected %s\n    actual %s\n", off, expected, actual); */
+      }
+    }
+    n -= chunksize;
+    off += chunksize;
+    buf += chunksize;
+    printk("mem_pread bufsize read off=%x n=%d\n", off, n);
   }
   memcpy(buf, ((char *)addr) + off, n);
   printk("mem_pread done\n");
@@ -27,19 +53,27 @@ ssize_t mem_pread(void *addr, void *buf, size_t n, off_t off)
 void load_elf(const char* fn, elf_info* info)
 {
   void *kernel_elf_addr = (void *)strtoul(fn, 0, 0);
-  file_t* file = 0;
+  //file_t* file = 0;
+  file = 0;
   if (!kernel_elf_addr) {
     file = file_open(fn, O_RDONLY, 0);
+    if (IS_ERR_VALUE(file))
+      goto fail;
+  } else {
+    printk("opening vmlinux\n");
+    file = file_open("/home/jamey/linux/vmlinux", O_RDONLY, 0);
+    printk("file %p\n", file);
     if (IS_ERR_VALUE(file))
       goto fail;
   }
 
   Elf64_Ehdr eh64;
+  printk("%s:%d %p\n", __FILE__, __LINE__, kernel_elf_addr);
   ssize_t ehdr_size = (kernel_elf_addr
 		       ? mem_pread(kernel_elf_addr, &eh64, sizeof(eh64), 0)
 		       : file_pread(file, &eh64, sizeof(eh64), 0));
   printk("ehdr_size=%d sizeof(eh64)=%d\n", ehdr_size, sizeof(eh64));
-  printk("eh64.ident = %x==%x %c %c %c\n", '\177', eh64.e_ident[0], eh64.e_ident[1], eh64.e_ident[2], eh64.e_ident[3]);
+  printk("eh64.ident = %c %c %c\n", eh64.e_ident[1], eh64.e_ident[2], eh64.e_ident[3]);
 
   if (ehdr_size < (ssize_t)sizeof(eh64) ||
       !(eh64.e_ident[0] == '\177' && eh64.e_ident[1] == 'E' &&
@@ -137,5 +171,6 @@ void load_elf(const char* fn, elf_info* info)
   return;
 
 fail:
+  printk("calling panic\n");
     panic("couldn't open ELF program: %s!", fn);
 }
