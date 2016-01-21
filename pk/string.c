@@ -37,6 +37,33 @@ void* memset(void* dest, int byte, size_t len)
   return dest;
 }
 
+int memcmp(const void *s1, const void *s2, size_t n)
+{
+  const unsigned long *longp1 = (const unsigned long *)s1;
+  const unsigned long *longp2 = (const unsigned long *)s2;
+  const unsigned char *str1 = (const unsigned char *)s1;
+  const unsigned char *str2 = (const unsigned char *)s2;
+  while (n > 8) {
+    unsigned long c1 = *longp1++;
+    unsigned long c2 = *longp2++;
+    if (c1 < c2)
+      return -1;
+    if (c1 > c2)
+      return 1;
+    n -= 8;
+  }
+  while (n > 0) {
+    unsigned char c1 = *str1++;
+    unsigned char c2 = *str2++;
+    if (c1 < c2)
+      return -1;
+    if (c1 > c2)
+      return 1;
+    n--;
+  }
+  return 0;
+}
+
 size_t strlen(const char *s)
 {
   const char *p = s;
