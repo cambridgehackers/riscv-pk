@@ -14,58 +14,23 @@ file_t *file = 0;
 
 ssize_t mem_pread(void *addr, void *buf, size_t n, off_t off)
 {
-  printk("%s:%d\n", __FILE__, __LINE__);
   int nread = n;
   int chunksize = 1024;
   int chunk[1024];
 
-  printk("%s:%d\n", __FILE__, __LINE__);
-
-  printk("file_pread addr=%x n=%d off=%x buf=%x\n", addr, n, off, buf);
-  file_pread(file, buf, n, off);
   printk("mem_pread addr=%x n=%d off=%x buf=%x\n", addr, n, off, buf);
-  while (n > chunksize) {
-    if (memcmp(buf, ((char *)addr) + off, chunksize) != 0) {
-      int i;
-      int o1 = 0;
-      int o2 = 0;
-      printk("mismatch at off %x\n", off);
-      if (0) {
-      /* 	char expected[4096]; */
-      /* char actual[4096]; */
-      /* for (i = 0; i < chunksize; i++) { */
-      /* 	o1 += snprintf(expected+o1, 4096-o1, " %02x", *(char *)(buf + i)); */
-      /* 	o2 += snprintf(actual+o2, 4096-o2, " %02x", *(char *)(addr + off + i)); */
-      /* } */
-      /* printk("mismatch at off %x\n    expected %s\n    actual %s\n", off, expected, actual); */
-      }
-    }
-    n -= chunksize;
-    off += chunksize;
-    buf += chunksize;
-    printk("mem_pread bufsize read off=%x n=%d\n", off, n);
-  }
   memcpy(buf, ((char *)addr) + off, n);
   printk("mem_pread done\n");
   return nread;
 }
 
-void load_elf(const char* fn, elf_info* info)
+void load_elf(void *elf_start, elf_info* info)
 {
-  void *kernel_elf_addr = (void *)strtoul(fn, 0, 0);
+  void *kernel_elf_addr = elf_start;
   //file_t* file = 0;
   file = 0;
-  if (!kernel_elf_addr) {
-    file = file_open(fn, O_RDONLY, 0);
-    if (IS_ERR_VALUE(file))
-      goto fail;
-  } else {
-    printk("opening vmlinux\n");
-    file = file_open("/home/jamey/linux/vmlinux", O_RDONLY, 0);
-    printk("file %p\n", file);
-    if (IS_ERR_VALUE(file))
-      goto fail;
-  }
+  printk("load_elf\n");
+  printk("load_elf addr=%lx\n", kernel_elf_addr);
 
   Elf64_Ehdr eh64;
   printk("%s:%d %p\n", __FILE__, __LINE__, kernel_elf_addr);
@@ -167,10 +132,11 @@ void load_elf(const char* fn, elf_info* info)
   info->first_vaddr_after_user = ROUNDUP(max_vaddr - info->bias, RISCV_PGSIZE);
   info->brk_min = max_vaddr;
 
-  file_decref(file);
+  printk("%s:%d\n", __FUNCTION__, __LINE__);
+  //file_decref(file);
   return;
 
 fail:
   printk("calling panic\n");
-    panic("couldn't open ELF program: %s!", fn);
+    panic("couldn't open ELF program: %lx!", elf_start);
 }
