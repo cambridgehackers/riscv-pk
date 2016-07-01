@@ -90,7 +90,14 @@ static void vprintk(const char* s, va_list vl)
 {
   char out[256]; // XXX
   int res = vsnprintf(out, sizeof(out), s, vl);
-  file_write(stderr, out, res < sizeof(out) ? res : sizeof(out));
+#if 0
+  file_write(&files[2], out, res < sizeof(out) ? res : sizeof(out));
+#else
+  uint32_t *uart = (uint32_t *)0xc0003020u; // first method fifo of first portal
+  for (int i = 0; i < res; i++)
+    *uart = out[i];
+
+#endif
 }
 
 void printk(const char* s, ...)
