@@ -1,5 +1,6 @@
 #include <string.h>
 #include "file.h"
+#include "pk.h"
 
 static const char logo[] =
 "              vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv\n"
@@ -28,5 +29,6 @@ static const char logo[] =
 
 void print_logo()
 {
-  file_write(stderr, logo, sizeof logo);
+  //file_write(&files[2], logo, sizeof logo);
+  printk(logo);
 }
