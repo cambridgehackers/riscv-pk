@@ -134,6 +134,18 @@ static uintptr_t mcall_hart_id()
   return HLS()->hart_id;
 }
 
+#if 1
+static volatile uint8_t *uart = (volatile uint8_t *)0xc0003020;
+
+uintptr_t mcall_console_putchar(uint8_t ch)
+{
+  *uart = ch;
+  if (ch == '\n')
+    *uart = '\r';
+    return 0;
+}
+
+#else
 static uintptr_t mcall_console_putchar(uint8_t ch)
 {
   while (swap_csr(mtohost, TOHOST_CMD(1, 1, ch)) != 0);
@@ -149,6 +161,7 @@ static uintptr_t mcall_console_putchar(uint8_t ch)
   }
   return 0;
 }
+#endif
 
 void printm(const char* s, ...)
 {
@@ -252,6 +265,8 @@ static uintptr_t mcall_set_timer(unsigned long long when)
 uintptr_t mcall_trap(uintptr_t mcause, uintptr_t* regs)
 {
   uintptr_t n = regs[17], arg0 = regs[10], retval;
+  if (n != 1 && n != 7)
+    printk("mcall_trap n=%x arg0=%x\n", n, arg0);
   switch (n)
   {
     case MCALL_HART_ID:
