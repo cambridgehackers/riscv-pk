@@ -71,26 +71,49 @@ void hls_init(uint32_t id, uintptr_t* csrs)
   }
 }
 
+volatile uint32_t *fifo = (volatile uint32_t *)0xc0003020u;
+volatile uint32_t *blockreq = (volatile uint32_t *)0xc0005020u;
+volatile uint32_t *blockresp = (volatile uint32_t *)0xc0002020u;
 static void init_hart()
 {
   mstatus_init();
-  fp_init();
+  //fp_init();
 }
 
 void init_first_hart()
 {
+  char *str = "**\r\n";
   init_hart();
 
-  memset(HLS(), 0, sizeof(*HLS()));
-  file_init();
-  parse_device_tree();
+  *blockreq = 0; // read
+  *blockreq = (long)&str; // dramaddr
+  *blockreq = 22; // offset
+  *blockreq = 512; // size
+  *blockreq = 19;  // tag
+  printk("sent blockdev request resp.notEmpty=%x tag=%x\n", blockresp[1], blockresp[0]);
 
-  struct mainvars arg_buffer;
-  struct mainvars *args = parse_args(&arg_buffer);
+  memset(HLS(), 0, sizeof(*HLS()));
+  //file_init();
+  //parse_device_tree();
+  mem_size = 64 << 20;
+  num_harts = 1;
+  void *elf_start = (void *)0xc8000000; // something
+
+  printk("mem_size=%x\n", mem_size);
+  printk("num_harts=%x\n", num_harts);
+  printk("elf_start=%x\n", elf_start);
 
   memory_init();
+  str = "22\r\n";
+  for (int i = 0; i < 4; i++) {
+    while (fifo[1] != 1)
+      ;
+    fifo[0] = str[i];
+  }
   vm_init();
-  boot_loader(args);
+  str = "33\r\n";
+  printk(str);
+  boot_loader(elf_start);
 }
 
 void init_other_hart()
