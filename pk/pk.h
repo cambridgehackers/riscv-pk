@@ -67,7 +67,7 @@ void handle_misaligned_load(trapframe_t*);
 void handle_misaligned_store(trapframe_t*);
 void handle_fault_load(trapframe_t*);
 void handle_fault_store(trapframe_t*);
-void boot_loader(struct mainvars*);
+void boot_loader(void *elf_start);
 void run_loaded_program(struct mainvars*);
 void boot_other_hart();
 
@@ -94,7 +94,7 @@ typedef struct {
 
 extern elf_info current;
 
-void load_elf(const char* fn, elf_info* info);
+void load_elf(void *elf_start, elf_info* info);
 
 static inline int insn_len(long insn)
 {
